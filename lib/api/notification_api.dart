@@ -1,6 +1,9 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationAPI {
   static RemoteMessage messages = const RemoteMessage(
@@ -22,27 +25,62 @@ class NotificationAPI {
     final iOS = IOSInitializationSettings();
     final settings = InitializationSettings(android: android, iOS: iOS);
 
+    final details = await localNotification.getNotificationAppLaunchDetails();
+    if (details != null && details.didNotificationLaunchApp) {
+      onNotification.add(messages);
+    }
+
+    await localNotification.initialize(
+      settings,
+      onSelectNotification: (payload) async {
+        onNotification.add(messages);
+      },
+    );
+
+    tz.initializeTimeZones();
+    final locationName = await FlutterNativeTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(locationName));
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       messages = message;
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification!.android;
       if (notification != null && android != null) {
         //show message on banner from firebase messaging
-        localNotification.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              channel.id,
-              channel.name,
-              channelDescription: channel.description,
-              importance: channel.importance,
-              icon: '@mipmap/ic_launcher',
+        // localNotification.show(
+        //   notification.hashCode,
+        //   notification.title,
+        //   notification.body,
+        //   NotificationDetails(
+        //     android: AndroidNotificationDetails(
+        //       channel.id,
+        //       channel.name,
+        //       channelDescription: channel.description,
+        //       importance: channel.importance,
+        //       icon: '@mipmap/ic_launcher',
+        //     ),
+        //   ),
+        //   payload: 'hurn.sothea',
+        // );
+
+        localNotification.zonedSchedule(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            tz.TZDateTime.from(
+                DateTime.now().add(const Duration(seconds: 12)), tz.local),
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                channel.id,
+                channel.name,
+                channelDescription: channel.description,
+                importance: channel.importance,
+                icon: '@mipmap/ic_launcher',
+              ),
             ),
-          ),
-          payload: 'hurn.sothea',
-        );
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+            androidAllowWhileIdle: true);
       }
     });
 
@@ -60,29 +98,5 @@ class NotificationAPI {
         onNotification.add(message);
       }
     });
-
-    final details = await localNotification.getNotificationAppLaunchDetails();
-    if (details != null && details.didNotificationLaunchApp) {
-      onNotification.add(
-        RemoteMessage(
-            notification: RemoteNotification(
-                title: 'details',
-                body: 'localNotification.getNotificationAppLaunchDetails()')),
-      );
-
-      FirebaseMessaging.instance.getInitialMessage().then((message) =>
-          messages.messageId!.isNotEmpty
-              ? onNotification.add(message!)
-              : onNotification.add(message!));
-    }
-
-    await localNotification.initialize(
-      settings,
-      onSelectNotification: (payload) async {
-        onNotification.add(RemoteMessage(
-            notification: RemoteNotification(
-                title: 'localNotification.initialize', body: payload)));
-      },
-    );
   }
 }
