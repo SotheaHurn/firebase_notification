@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print('A big message just showed up : ${message.messageId}');
+  NotificationAPI().showNotification(message);
 }
 
 Future<void> main() async {
