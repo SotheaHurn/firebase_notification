@@ -1,12 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_notifications/main.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:rxdart/rxdart.dart';
 
 class NotificationAPI {
-  static RemoteMessage messages = const RemoteMessage(
-      notification: RemoteNotification(title: 'Null', body: 'Null'));
-
   static const channel = AndroidNotificationChannel(
     'high_importance_channel',
     'High Importance Notification',
@@ -25,12 +23,14 @@ class NotificationAPI {
 
     final details = await localNotification.getNotificationAppLaunchDetails();
     if (details != null && details.didNotificationLaunchApp) {
+      print('getNotificationAppLaunchDetails');
       onNotification.add(messages);
     }
 
     await localNotification.initialize(
       settings,
       onSelectNotification: (payload) async {
+        print('localNotification.initialize');
         onNotification.add(messages);
       },
     );
@@ -41,6 +41,7 @@ class NotificationAPI {
       AndroidNotification? android = message.notification!.android;
       if (notification != null && android != null) {
         // show message on banner from firebase messaging
+        print('onMessage.listen');
         localNotification.show(
           notification.hashCode,
           notification.title,
@@ -51,6 +52,7 @@ class NotificationAPI {
               channel.name,
               channelDescription: channel.description,
               importance: channel.importance,
+              priority: Priority.high,
               icon: '@mipmap/ic_launcher',
             ),
           ),
@@ -60,14 +62,14 @@ class NotificationAPI {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      messages = message;
       print('a new onMessageOpenedApp event was published');
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification!.android;
       if (notification != null && android != null) {
-        onNotification.add(message);
+        onNotification.add(messages);
       }
     });
+
     String? fcmToken = 'No token';
     await FirebaseMessaging.instance
         .getToken()
@@ -77,12 +79,14 @@ class NotificationAPI {
 
   Future<void> showNotification(RemoteMessage message) async {
     await Firebase.initializeApp();
-    RemoteNotification notification = messages.notification!;
+    RemoteNotification notification = message.notification!;
+    print('showNotification');
+    messages = message;
     var androidChannel = const AndroidNotificationDetails(
       'high_importance_channel',
       'High Importance Notification',
       channelDescription: 'heello',
-      importance: Importance.max,
+      importance: Importance.high,
       priority: Priority.high,
     );
     var iosChannel = const IOSNotificationDetails();
@@ -95,6 +99,13 @@ class NotificationAPI {
       notification.body,
       platformChannel,
       payload: 'hurn.sothea',
+    );
+
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
     );
   }
 }

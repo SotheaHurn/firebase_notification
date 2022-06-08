@@ -10,6 +10,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   NotificationAPI().showNotification(message);
 }
 
+RemoteMessage messages = const RemoteMessage(
+    notification: RemoteNotification(title: 'Null', body: 'Null'));
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();

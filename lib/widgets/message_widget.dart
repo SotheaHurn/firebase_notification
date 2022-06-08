@@ -18,6 +18,13 @@ class _MessageWidgetState extends State<MessageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('data'),
+      ),
+      body: Container(
+        color: Colors.black,
+      ),
+    );
   }
 }
